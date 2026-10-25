@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>محاسبه‌گر رنگ مقاومت</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
+    background:radial-gradient(circle at 50% 0%,#1e293b,#0b1120 60%);
+    font-family:"Vazirmatn","Segoe UI",Tahoma,sans-serif;color:#e2e8f0;
+  }
+  .card{
+    width:min(680px,100%);background:rgba(30,41,59,.75);
+    border:1px solid rgba(148,163,184,.18);border-radius:22px;padding:28px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(10px);
+  }
+  h1{font-size:1.35rem;margin:0 0 4px}
+  .sub{color:#94a3b8;font-size:.85rem;margin:0 0 22px}
+  label{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:6px}
+  input[type=text]{
+    width:100%;padding:14px 16px;font-size:1.15rem;border-radius:12px;
+    border:1px solid rgba(148,163,184,.25);background:#0f172a;color:#f1f5f9;
+    font-family:inherit;outline:none;transition:.2s;direction:ltr;text-align:left;
+  }
+  input:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  select{
+    width:100%;padding:12px;border-radius:12px;background:#0f172a;color:#f1f5f9;
+    border:1px solid rgba(148,163,184,.25);font-family:inherit;font-size:.95rem;cursor:pointer;
+  }
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .presets button{
+    background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:#7dd3fc;
+    padding:7px 13px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:.82rem;transition:.2s;
+  }
+  .presets button:hover{background:rgba(56,189,248,.22)}
+
+  .resistor{display:flex;align-items:center;justify-content:center;margin:28px 0 18px}
+  .lead{width:38px;height:5px;background:linear-gradient(#cbd5e1,#94a3b8);border-radius:3px;flex:none}
+  .body{
+    position:relative;flex:1;max-width:300px;height:84px;
+    background:linear-gradient(#f2dfb8,#d9c089);border-radius:999px;overflow:hidden;
+    box-shadow:inset 0 -8px 16px rgba(120,90,40,.35),inset 0 6px 12px rgba(255,255,255,.55),0 10px 20px rgba(0,0,0,.35);
+  }
+  .band{position:absolute;top:0;bottom:0;width:13px;box-shadow:inset -2px 0 3px rgba(0,0,0,.25),0 0 2px rgba(0,0,0,.3)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:18px}
+  .chip{
+    display:flex;align-items:center;gap:7px;background:rgba(15,23,42,.8);
+    border:1px solid rgba(148,163,184,.18);border-radius:999px;padding:6px 12px;font-size:.82rem;
+  }
+  .swatch{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,.3);flex:none}
+  .chip-label{color:#94a3b8;font-size:.75rem}
+  .chip-name{font-weight:600}
+
+  .summary{display:flex;gap:12px}
+  .summary>div{
+    flex:1;background:#0f172a;border-radius:14px;padding:14px;text-align:center;
+    border:1px solid rgba(148,163,184,.18);
+  }
+  .summary .k{display:block;font-size:.75rem;color:#94a3b8;margin-bottom:4px}
+  .summary strong{font-size:1.2rem;color:#38bdf8}
+
+  .hint{color:#94a3b8;font-size:.85rem;text-align:center;margin:10px 0 0}
+  .error{color:#fca5a5;font-size:.9rem;text-align:center;background:rgba(239,68,68,.1);
+    border:1px solid rgba(239,68,68,.3);padding:14px;border-radius:12px;margin:0}
+  .note{color:#fbbf24;font-size:.8rem;text-align:center;margin:12px 0 0}
+  .foot{color:#64748b;font-size:.78rem;text-align:center;margin-top:18px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎨 محاسبه‌گر رنگ مقاومت</h1>
+  <p class="sub">مقدار مقاومت را وارد کنید تا رنگ نوارهایش را ببینید</p>
+
+  <label for="val">مقدار مقاومت</label>
+  <input id="val" type="text" placeholder="مثلاً 470 یا 4.7k یا 2k2 یا 1M" autocomplete="off">
+
+  <div class="presets" id="presets"></div>
+
+  <div class="row">
+    <div>
+      <label for="bands">تعداد نوار</label>
+      <select id="bands">
+        <option value="4">۴ نوار</option>
+        <option value="5">۵ نوار</option>
+      </select>
+    </div>
+    <div>
+      <label for="tol">رواداری (تلرانس)</label>
+      <select id="tol"></select>
+    </div>
+  </div>
+
+  <div id="out"></div>
+
+  <p class="foot">
+    راهنما: k = کیلو (×۱۰۰۰) — M = مگا (×۱۰۰۰۰۰۰) — نوشتن <span dir="ltr">4k7</span> یعنی <span dir="ltr">4700Ω</span>
+  </p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const input = $("val"), bandSel = $("bands"), tolSel = $("tol"), out = $("out");
+
+/* ---------- رنگ‌ها ---------- */
+const COLORS = [
+  { name: "مشکی",    hex: "#111111" },
+  { name: "قهوه‌ای", hex: "#7B3F00" },
+  { name: "قرمز",    hex: "#D32F2F" },
+  { name: "نارنجی",  hex: "#F57C00" },
+  { name: "زرد",     hex: "#FDD835" },
+  { name: "سبز",     hex: "#2E7D32" },
+  { name: "آبی",     hex: "#1565C0" },
+  { name: "بنفش",    hex: "#7B1FA2" },
+  { name: "خاکستری", hex: "#9E9E9E" },
+  { name: "سفید",    hex: "#FAFAFA" }
+];
+const GOLD   = { name: "طلایی",   hex: "#C9A227" };
+const SILVER = { name: "نقره‌ای", hex: "#C0C0C0" };
+
+const TOLERANCES = [
+  { key:"gold",   name:"طلایی",   hex:"#C9A227", pct:"±5%" },
+  { key:"silver", name:"نقره‌ای", hex:"#C0C0C0", pct:"±10%" },
+  { key:"brown",  name:"قهوه‌ای", hex:"#7B3F00", pct:"±1%" },
+  { key:"red",    name:"قرمز",    hex:"#D32F2F", pct:"±2%" },
+  { key:"green",  name:"سبز",     hex:"#2E7D32", pct:"±0.5%" },
+  { key:"blue",   name:"آبی",     hex:"#1565C0", pct:"±0.25%" },
+  { key:"violet", name:"بنفش",    hex:"#7B1FA2", pct:"±0.1%" },
+  { key:"gray",   name:"خاکستری", hex:"#9E9E9E", pct:"±0.05%" }
+];
+
+TOLERANCES.forEach(t => {
+  const o = document.createElement("option");
+  o.value = t.key;
+  o.textContent = t.name + "  " + t.pct;
+  tolSel.appendChild(o);
+});
+tolSel.value = "gold";
+
+/* ---------- دکمه‌های آماده ---------- */
+["10","47","100","220","330","470","1k","2.2k","4.7k","10k","47k","100k","1M"].forEach(v => {
+  const b = document.createElement("button");
+  b.textContent = v;
+  b.onclick = () => { input.value = v; update(); };
+  $("presets").appendChild(b);
+});
+
+/* ---------- تبدیل ورودی به عدد ---------- */
+function parseValue(raw){
+  if(!raw) return null;
+  let s = String(raw).trim().toLowerCase();
+  // ارقام فارسی/عربی
+  s = s.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+  s = s.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  s = s.replace(/\s+/g, "").replace(/,/g, ".");
+  s = s.replace(/kohm|mohm|gohm/g, m => m[0]);
+  s = s.replace(/ohm|ohms|اهم|اهما|Ω|ω/g, "");
+  s = s.replace(/r/g, ".");        // 4r7 -> 4.7
+  s = s.replace(/\.+$/, "");       // 470r -> 470
+  s = s.replace(/^\./, "0.");
+
+  const m = s.match(/^(\d+(?:\.\d+)?)([kmg]?)(\d*)$/);
+  if(!m) return null;
+
+  let num = m[3] ? parseFloat(m[1] + "." + m[3]) : parseFloat(m[1]);
+  const mults = { k:1e3, m:1e6, g:1e9, "":1 };
+  const v = num * mults[m[2]];
+  return isFinite(v) ? v : null;
+}
+
+/* ---------- ساخت نوارها ---------- */
+function makeBands(value, digits){
+  if(!(value > 0)) return null;
+
+  let v = value, exp = 0;
+  while(v >= 10){ v /= 10; exp++; }
+  while(v < 1) { v *= 10; exp--; }
+
+  let sig = Math.round(v * Math.pow(10, digits - 1));
+  let mult = exp - (digits - 1);
+  if(sig >= Math.pow(10, digits)){ sig = Math.round(sig / 10); mult++; }
+
+  if(String(sig).length !== digits) return null;
+  if(mult < -2 || mult > 9) return null;
+
+  const digitColors = String(sig).split("").map(d => COLORS[+d]);
+  const multColor = mult >= 0 ? COLORS[mult] : (mult === -1 ? GOLD : SILVER);
+
+  return { digitColors, multColor, represented: sig * Math.pow(10, mult) };
+}
+
+/* ---------- قالب‌بندی عدد ---------- */
+function trimNum(n){
+  return n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+}
+function fmt(v){
+  if(v >= 1e9) return trimNum(v/1e9) + " GΩ";
+  if(v >= 1e6) return trimNum(v/1e6) + " MΩ";
+  if(v >= 1e3) return trimNum(v/1e3) + " kΩ";
+  return trimNum(v) + " Ω";
+}
+
+/* ---------- رسم بدنه مقاومت ---------- */
+function renderResistor(bandList){
+  const pos = bandList.length === 4 ? [14,30,46,80] : [12,25,38,51,82];
+  const bands = bandList.map((c,i) =>
+    `<span class="band" style="left:${pos[i]}%;background:${c.hex}"></span>`).join("");
+  return `<div class="resistor">
+            <div class="lead"></div>
+            <div class="body">${bands}</div>
+            <div class="lead"></div>
+          </div>`;
+}
+
+/* ---------- به‌روزرسانی خروجی ---------- */
+function update(){
+  const raw = input.value;
+  if(raw.trim() === ""){
+    out.innerHTML = `<p class="hint">مقدار مقاومت را وارد کنید…</p>`;
+    return;
+  }
+
+  const value = parseValue(raw);
+  if(value === null){
+    out.innerHTML = `<p class="error">مقدار نامعتبر است. مثال: 470 یا 4.7k یا 2k2</p>`;
+    return;
+  }
+  if(value <= 0){
+    out.innerHTML = `<p class="error">مقدار باید بزرگ‌تر از صفر باشد.</p>`;
+    return;
+  }
+
+  const bandCount = parseInt(bandSel.value, 10);
+  const digits = bandCount === 4 ? 2 : 3;
+  const tol = TOLERANCES.find(t => t.key === tolSel.value) || TOLERANCES[0];
+
+  let res = makeBands(value, digits);
+  if(!res){
+    const alt = makeBands(value, digits === 2 ? 3 : 2);
+    out.innerHTML = `<p class="error">این مقدار با ${bandCount} نوار قابل نمایش نیست.` +
+      (alt ? ` با ${bandCount === 4 ? 5 : 4} نوار امتحان کنید.` : " مقدار خارج از محدوده است.") +
+      `</p>`;
+    return;
+  }
+
+  const labels = bandCount === 4
+    ? ["رقم ۱","رقم ۲","ضریب","تلرانس"]
+    : ["رقم ۱","رقم ۲","رقم ۳","ضریب","تلرانس"];
+
+  const all = [...res.digitColors, res.multColor, tol];
+
+  const chips = all.map((c,i) => `
+    <div class="chip">
+      <span class="swatch" style="background:${c.hex}"></span>
+      <span class="chip-label">${labels[i]}</span>
+      <span class="chip-name">${c.name}</span>
+    </div>`).join("");
+
+  const diff = Math.abs(res.represented - value);
+  const inexact = diff > Math.max(value, 1) * 1e-6;
+
+  out.innerHTML = `
+    ${renderResistor(all)}
+    <div class="legend">${chips}</div>
+    <div class="summary">
+      <div><span class="k">مقدار</span><strong>${fmt(res.represented)}</strong></div>
+      <div><span class="k">تلرانس</span><strong>${tol.pct}</strong></div>
+    </div>
+    ${inexact ? `<p class="note">⚠️ این مقدار دقیقاً با ${bandCount} نوار قابل ساخت نیست؛ نزدیک‌ترین مقدار ${fmt(res.represented)} است.</p>` : ""}
+  `;
+}
+
+/* ---------- رویدادها ---------- */
+input.addEventListener("input", update);
+bandSel.addEventListener("change", () => {
+  tolSel.value = bandSel.value === "4" ? "gold" : "brown";
+  update();
+});
+tolSel.addEventListener("change", update);
+
+update();
+</script>
+</body>
+</html>
